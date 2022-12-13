@@ -1,14 +1,10 @@
-name: go-demo
+name: test-go-number2
 description: |
   Example component that includes a Golang server that renders templates
   and allows creation of items in a database
-
 keywords:
   - go
   - golang
-
-# Add secrets to be used by different services. For more information:
-# https://docs.architect.io/deployments/secrets/
 secrets:
   db_user:
     description: Root user to assign to the component's DB
@@ -22,41 +18,25 @@ secrets:
   db_port:
     description: Port for the db
     default: 5432
-
-# Below are the configured services for the Go component.
-# For more info - https://docs.architect.io/components/services/
 services:
-  ### This service is the actual Go component ###
   app:
-    # Build context is the location of your application relative to the architect.yml file
     build:
       context: .
-    # Main interface port used to help define the url in the top level `interfaces` block at the bottom of this file
     interfaces:
-      main: &port 8000
-    # Set environment variables for your application here
+      main: 8000
     environment:
-      PORT: *port
-      DB_NAME: ${{ secrets.db_name }}
-      DB_USER: ${{ secrets.db_user }}
-      DB_PASSWORD:  ${{ secrets.db_pass }}
-      DB_HOST: ${{ services.app-db.interfaces.database.host }}
-      DB_PORT: ${{ services.app-db.interfaces.database.port }}
-    # We want our app to start up after the db is running so that we can connect to it on startup!
-    # This block contains a list of services we need to start before 'app' starts.
+      PORT: 8000
+      DB_NAME: '${{ secrets.db_name }}'
+      DB_USER: '${{ secrets.db_user }}'
+      DB_PASSWORD: '${{ secrets.db_pass }}'
+      DB_HOST: '${{ services.app-db.interfaces.database.host }}'
+      DB_PORT: '${{ services.app-db.interfaces.database.port }}'
     depends_on:
       - app-db
-    # The liveness_probe makes sure the application is healthy - if not, it will re-start the application
     liveness_probe:
-      command: wget --spider -q localhost:8000
+      command: 'wget --spider -q localhost:8000'
       interval: 5s
-    # Debug block is used to modify behavior when running `architect dev` (without the --debug=false flag)
-    #   One common example is to enable hot-reloading for local development. For more info, see -
-    #   https://docs.architect.io/components/local-configuration/#hot-reloading
     debug:
-      # reflex (https://github.com/cespare/reflex) allows us to run a command
-      # every time file changes are detected. When running locally, this will
-      # rebuild our server and run it again.
       command: |
         reflex -s -- sh -c '
           go build -o server
@@ -66,37 +46,21 @@ services:
         args:
           DEBUG: '1'
       volumes:
-        # The name of the volume we are creating
         app:
-          # Path to source code we want to mount relative to the architect.yml file
           host_path: ./server
-          # The `WORKDIR` defined in the Dockerfile, where we want our code to be mounted
           mount_path: /usr/src
-
-
-  #  This is an additional service that adds a postgres database
-  #   to show off Architect's support for microservice architecture
-  #   through service discovery. For more info, check out:
-  #   https://docs.architect.io/components/service-discovery/
   app-db:
-    image: postgres:12
+    image: 'postgres:12'
     interfaces:
       database:
-        port: ${{ secrets.db_port }}
+        port: '${{ secrets.db_port }}'
         protocol: postgresql
     environment:
-      POSTGRES_DB: ${{ secrets.db_name }}
-      POSTGRES_USER: ${{ secrets.db_user }}
-      POSTGRES_PASSWORD: ${{ secrets.db_pass }}
-
-
-# Interfaces are used to expose our application to the gateway, allowing
-#   other services and dependencies to connect to one another.
-#   For more info - https://docs.architect.io/components/interfaces/
+      POSTGRES_DB: '${{ secrets.db_name }}'
+      POSTGRES_USER: '${{ secrets.db_user }}'
+      POSTGRES_PASSWORD: '${{ secrets.db_pass }}'
 interfaces:
-  # Interface for our main Go application
   app:
-    url: ${{ services.app.interfaces.main.url }}
-    # This ingress allows us to connect to this service from outside the cluster
+    url: '${{ services.app.interfaces.main.url }}'
     ingress:
       subdomain: app
